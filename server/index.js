@@ -396,7 +396,11 @@ app.get("/api/place-image", (req, res) => {
 
 if (isProduction) {
   app.use(express.static(path.join(root, "dist")));
-  app.get("*", (_req, res) => {
+  app.use((req, res, next) => {
+    if (req.method !== "GET" || req.path.startsWith("/api/")) {
+      return next();
+    }
+
     res.sendFile(path.join(root, "dist", "index.html"));
   });
 } else {
