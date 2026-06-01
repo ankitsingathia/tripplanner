@@ -75,7 +75,4 @@ The project follows a modular structure for easy scalability:
 
 ---
 
-## 📄 License & Credits
-
-Distributed under the MIT License. Built with passion for modern web development and travel.
 
