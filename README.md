@@ -1,55 +1,81 @@
-# Wanderly AI Trip Planner
+# Wanderly AI Trip Planner 🌍
 
-Wanderly is a resume-ready AI travel planner built with React, Tailwind CSS, Google Gemini, Firebase Auth, Firestore, OpenStreetMap, Leaflet, Nominatim, and Overpass.
+Wanderly is a professional-grade, AI-driven travel planning application. It leverages the power of Large Language Models (LLMs) and Open Source Geographic Data to create highly personalized, geographically optimized itineraries.
 
-## Features
+Developed with a focus on seamless UX and robust architecture, Wanderly is "resume-ready" and demonstrates integration across a modern full-stack ecosystem.
 
-- Google login with Firebase Authentication
-- Firestore trip saving per authenticated user
-- Gemini-generated day-wise itineraries with ordered nearby stops, travel legs, timings, budget notes, and route rationale
-- OpenStreetMap + Leaflet route maps
-- Nominatim city/place search with autocomplete suggestions
-- Overpass lookup for nearby hotels, restaurants, cafes, and attractions
-- Clean responsive dashboard inspired by modern travel products
-- Demo mode when Firebase keys are not present, so the UI can still be reviewed locally
+---
 
-## Run Locally
+## ✨ Key Features
 
-1. Install dependencies:
+- **🧠 Intelligent Itineraries**: Uses Google Gemini to generate day-by-day plans with logical stop ordering, timing estimates, and budget breakdowns.
+- **🗺️ Interactive Mapping**: Built-in OpenStreetMap and Leaflet integration for real-time visualization of your travel route.
+- **🔍 Smart Search**: Real-time destination suggestions via Nominatim and local POI (Points of Interest) data from the Overpass API.
+- **🔐 Secure Authentication**: Firebase Auth integration with Google Sign-In for personalized user profiles.
+- **💾 Cloud Persistence**: Persistent storage for your saved trips using Google Firestore.
+- **📱 Responsive Glassmorphism UI**: A premium, mobile-first design using Tailwind CSS with modern UI/UX principles.
+- **🛠️ Demo Mode**: Fully functional local environment even without Firebase keys, allowing for immediate UI/UX evaluation.
 
-```bash
-npm install
-```
+---
 
-2. Create `.env` from `.env.example` and add keys:
+## 🛠️ Technology Stack
 
-```bash
-cp .env.example .env
-```
+| Category           | Technology                                      |
+|--------------------|-------------------------------------------------|
+| **Frontend**       | React (Vite), Tailwind CSS, Lucide Icons        |
+| **Backend/BaaS**   | Node.js (Express), Firebase Auth, Firestore     |
+| **AI Engine**      | Google Gemini API (Pro/Flash)                  |
+| **Geospatial**     | Leaflet, OpenStreetMap, Nominatim, Overpass API |
+| **State/Logic**    | React Hooks, Express Middleware                 |
 
-3. Start the app:
+---
 
-```bash
-npm run dev
-```
+## 🚀 Getting Started
 
-Open `http://localhost:5173`.
+### Prerequisites
 
-## Required Keys For Full Functionality
+- Node.js (v18+)
+- NPM or Yarn
 
-- `GEMINI_API_KEY`: Creates real itineraries instead of predefined sample content.
-- `VITE_FIREBASE_*`: Enables Google OAuth and Firestore persistence.
-- `OSM_USER_AGENT`: Identifies your app to Nominatim and Overpass. Use your app name and email.
+### Installation
 
-No Google Maps or Google Places billing account is required.
+1. **Clone and Install**:
+   ```bash
+   npm install
+   ```
 
-## Firebase Setup
+2. **Environment Configuration**:
+   Create a `.env` file in the root directory and add your credentials:
+   ```env
+   GEMINI_API_KEY=your_key_here
+   OSM_USER_AGENT=Wanderly/1.0 (contact@example.com)
+   
+   # Optional: Firebase Config
+   VITE_FIREBASE_API_KEY=...
+   VITE_FIREBASE_AUTH_DOMAIN=...
+   VITE_FIREBASE_PROJECT_ID=...
+   ```
 
-Enable Google sign-in in Firebase Authentication, create a Firestore database, and publish the rules in `firestore.rules`.
+3. **Launch the Development Server**:
+   ```bash
+   node server/index.js
+   ```
+   *The app uses a custom Express server to handle both Vite middleware and API proxying.*
 
-Suggested Firestore shape:
+---
 
-```txt
-users/{uid}
-users/{uid}/trips/{tripId}
-```
+## 📁 Architecture
+
+The project follows a modular structure for easy scalability:
+
+- `/src/components`: UI components organized by feature (Dashboard, TripDetail, Explore).
+- `/server`: Express server logic, Gemini API integrations, and middleware.
+- `/public`: Static assets and icons.
+- `firestore.rules`: Security rules for database protection.
+
+---
+
+## 📄 License & Credits
+
+Distributed under the MIT License. Built with passion for modern web development and travel.
+
