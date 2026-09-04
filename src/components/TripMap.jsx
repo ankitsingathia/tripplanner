@@ -1,5 +1,79 @@
 import "leaflet/dist/leaflet.css";
-import { CircleMarker, MapContainer, Polyline, Popup, TileLayer } from "react-leaflet";
+import { useEffect } from "react";
+import { CircleMarker, MapContainer, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
+
+/**
+ * Makes the map behave the way a trackpad user expects.
+ *
+ * Leaflet's `scrollWheelZoom` captures every wheel event over the map, so a
+ * two-finger scroll meant to move the page zooms the map and the page stays
+ * put. Wheel zoom is disabled on the container instead, and this restores zoom
+ * for the gesture that actually means zoom: a pinch, which browsers deliver as
+ * a wheel event with `ctrlKey` set. Pinch on a real touchscreen is unaffected —
+ * that's Leaflet's `touchZoom`, which stays on.
+ */
+
+function PinchToZoom() {
+  const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+
+    // Zoom is applied 1:1 with the gesture — no easing, no tweening. The
+    // trackpad already emits a smooth stream of events, so the gesture itself
+    // is the animation; interpolating on top of it only adds lag and fights
+    // Leaflet's own transitions. Deltas are accumulated and flushed once per
+    // frame so a burst of events costs one reprojection instead of several.
+    let pendingLevels = 0;
+    let anchor = null;
+    let frame = null;
+
+    const flush = () => {
+      frame = null;
+      if (pendingLevels === 0) return;
+
+      const target = map.getZoom() + pendingLevels;
+      pendingLevels = 0;
+
+      const clamped = Math.min(map.getMaxZoom(), Math.max(map.getMinZoom(), target));
+
+      // animate: false — Leaflet's zoom animation would queue behind each
+      // update and smear the gesture. We want the map exactly where the
+      // fingers are, this frame.
+      map.setZoomAround(anchor, clamped, { animate: false });
+    };
+
+    const onWheel = (event) => {
+      // Plain two-finger scroll: let the page have it.
+      if (!event.ctrlKey) return;
+
+      // Pinch: this one is ours, so stop the browser page-zooming too.
+      event.preventDefault();
+
+      // deltaY units differ by device: 0 = pixels, 1 = lines, 2 = pages.
+      const unitScale = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 100 : 1;
+
+      // Browsers encode a pinch as scale = exp(-deltaY / 100). Zoom levels are
+      // base-2, so log2 of that scale converts the gesture directly into zoom
+      // levels — the result tracks how far the fingers moved, not how many
+      // events the trackpad happened to emit.
+      pendingLevels += -(event.deltaY * unitScale) / (100 * Math.LN2);
+      anchor = map.mouseEventToContainerPoint(event);
+
+      if (frame === null) frame = window.requestAnimationFrame(flush);
+    };
+
+    // passive: false — preventDefault on wheel is ignored in a passive listener.
+    container.addEventListener("wheel", onWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener("wheel", onWheel);
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
+  }, [map]);
+
+  return null;
+}
 
 function toPoint(stop) {
   const lat = Number(stop?.latitude ?? stop?.lat);
@@ -23,7 +97,16 @@ export default function TripMap({ trip, day }) {
 
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200">
-      <MapContainer center={center} zoom={routePoints.length ? 13 : 5} className="h-[360px] w-full">
+      <MapContainer
+        center={center}
+        zoom={routePoints.length ? 13 : 5}
+        className="h-[360px] w-full"
+        scrollWheelZoom={false}
+        // 0 = allow fractional zoom levels. Leaflet's default of 1 snaps to
+        // whole numbers, which rounds a pinch's small increments to nothing.
+        zoomSnap={0}
+      >
+        <PinchToZoom />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
