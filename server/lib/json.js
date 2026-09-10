@@ -17,7 +17,14 @@ export function extractJson(text) {
     const end = body.lastIndexOf("}");
 
     if (start >= 0 && end > start) {
-      return JSON.parse(body.slice(start, end + 1));
+      // Braces present but still not valid JSON. Report it as unparseable so
+      // the caller answers 502 — letting the SyntaxError escape turned a bad
+      // model reply into a cryptic 500.
+      try {
+        return JSON.parse(body.slice(start, end + 1));
+      } catch {
+        return null;
+      }
     }
   }
 

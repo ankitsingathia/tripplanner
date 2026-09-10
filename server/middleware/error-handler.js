@@ -13,6 +13,9 @@ export function errorHandler(error, _req, res, _next) {
   }
 
   res.status(status).json({
-    message: error.message || "Unable to generate trip."
+    // Generic on purpose: this handler serves every route, and the old
+    // fallback ("Unable to generate trip.") mislabelled search and nearby
+    // failures.
+    message: error.message || "Something went wrong."
   });
 }
