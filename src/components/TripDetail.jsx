@@ -153,9 +153,13 @@ function OverviewTab({ trip }) {
     <div className="space-y-6">
       {/* Hero + Summary */}
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <div className="overflow-hidden rounded-2xl border border-slate-200">
+        {/* The photo is absolutely positioned so it fills whatever height the
+            summary column beside it sets, without adding height of its own.
+            At a fixed h-72 it left a white gap under the photo; sized by the
+            image itself, a tall photo stretched the whole row instead. */}
+        <div className="relative min-h-72 overflow-hidden rounded-2xl border border-slate-200">
           <img
-            className="h-72 w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover"
             src={trip?.heroImage || fallbackImages.default}
             alt={trip?.destination}
           />

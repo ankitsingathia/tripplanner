@@ -96,7 +96,9 @@ export default function TripMap({ trip, day }) {
   const nearby = (trip?.nearby || []).slice(0, 10).filter((place) => place.lat && place.lon);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200">
+    // `isolate` keeps Leaflet's own z-indexes (400-1000) inside this box.
+    // Without it the map painted over the sticky z-30 header on scroll.
+    <div className="isolate overflow-hidden rounded-lg border border-slate-200">
       <MapContainer
         center={center}
         zoom={routePoints.length ? 13 : 5}
