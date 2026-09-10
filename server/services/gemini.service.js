@@ -10,7 +10,7 @@ import { normalizeTrip } from "../domain/trip.normalizer.js";
  * long as it keeps returning a normalized trip.
  */
 export async function generateTrip(request) {
-  const { apiKey, model, endpoint } = config.gemini;
+  const { apiKey, model, endpoint, thinkingBudget } = config.gemini;
 
   if (!apiKey) {
     throw badRequest("Missing GEMINI_API_KEY");
@@ -31,7 +31,8 @@ export async function generateTrip(request) {
       ],
       generationConfig: {
         temperature: 0.7,
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        ...thinkingConfigFor(model, thinkingBudget)
       }
     })
   });
@@ -52,4 +53,17 @@ export async function generateTrip(request) {
   }
 
   return normalizeTrip(parsed, request);
+}
+
+/**
+ * Gemini 2.5 Flash reasons before it answers unless told not to, and that pass
+ * is pure wait time for a structured itinerary. A budget of 0 disables it.
+ *
+ * Other families take different settings — 2.5 Pro can't turn thinking off at
+ * all — so the field is only sent where it's known to apply. An unrecognised
+ * model gets the API's default rather than a rejected request.
+ */
+export function thinkingConfigFor(model, budget) {
+  if (!/^gemini-2\.5-flash/.test(model) || !Number.isFinite(budget)) return {};
+  return { thinkingConfig: { thinkingBudget: budget } };
 }

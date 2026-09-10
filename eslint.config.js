@@ -14,6 +14,7 @@ export default [
       sourceType: "module",
       globals: {
         AbortController: "readonly",
+        AbortSignal: "readonly",
         console: "readonly",
         crypto: "readonly",
         fetch: "readonly",

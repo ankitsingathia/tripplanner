@@ -28,7 +28,7 @@ import { fallbackImages } from "./data/fallbackImages";
 
 const demoUser = {
   uid: "demo-user",
-  displayName: "Aarav Rajput",
+  displayName: "Ankit",
   email: "demo@wanderly.app",
   photoURL: "",
   demo: true

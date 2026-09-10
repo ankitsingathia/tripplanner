@@ -19,7 +19,8 @@ export async function searchPlaces(query, limit = 6) {
     headers: {
       "User-Agent": config.osm.userAgent,
       "Accept-Language": "en"
-    }
+    },
+    signal: AbortSignal.timeout(config.osm.nominatimTimeoutMs)
   });
 
   if (!response.ok) {
@@ -29,10 +30,46 @@ export async function searchPlaces(query, limit = 6) {
   return response.json();
 }
 
-export async function findNearby(lat, lon) {
+// The trip creator asks for nearby places twice: once for the preview when a
+// destination is picked, and again at submit whenever that preview came back
+// empty. Without this, a failed preview meant the submit sat through a second
+// slow Overpass call before Gemini was even called — measured at 8s on top of
+// the generation itself. Caching the promise (not the result) also covers a
+// submit that lands while the preview is still in flight.
+const nearbyCache = new Map();
+const NEARBY_HIT_TTL_MS = 10 * 60 * 1000;
+// Short, so a flaky Overpass gets retried soon, but long enough to cover the
+// gap between picking a destination and pressing generate.
+const NEARBY_MISS_TTL_MS = 60 * 1000;
+const NEARBY_CACHE_LIMIT = 500;
+
+export function findNearby(lat, lon) {
+  // ~110 m of rounding; the search radius is 5 km, so nearby picks share results.
+  const key = `${Number(lat).toFixed(3)},${Number(lon).toFixed(3)}`;
+  const cached = nearbyCache.get(key);
+  if (cached && cached.expires > Date.now()) return cached.promise;
+
+  if (nearbyCache.size >= NEARBY_CACHE_LIMIT) {
+    // Maps iterate in insertion order, so this drops the oldest entry.
+    nearbyCache.delete(nearbyCache.keys().next().value);
+  }
+
+  const promise = fetchNearby(lat, lon);
+  nearbyCache.set(key, { promise, expires: Date.now() + NEARBY_HIT_TTL_MS });
+  promise.catch(() => {
+    nearbyCache.set(key, { promise, expires: Date.now() + NEARBY_MISS_TTL_MS });
+  });
+
+  return promise;
+}
+
+async function fetchNearby(lat, lon) {
   const radius = config.osm.nearbyRadius;
+  // Keep Overpass's own query timeout in step with ours, so it stops working
+  // on a query we've already given up on.
+  const serverTimeout = Math.ceil(config.osm.overpassTimeoutMs / 1000);
   const query = `
-    [out:json][timeout:20];
+    [out:json][timeout:${serverTimeout}];
     (
       node(around:${radius},${lat},${lon})["tourism"="attraction"];
       way(around:${radius},${lat},${lon})["tourism"="attraction"];
@@ -48,7 +85,8 @@ export async function findNearby(lat, lon) {
       "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
       "User-Agent": config.osm.userAgent
     },
-    body: new URLSearchParams({ data: query })
+    body: new URLSearchParams({ data: query }),
+    signal: AbortSignal.timeout(config.osm.overpassTimeoutMs)
   });
 
   if (!response.ok) {
